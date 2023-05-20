@@ -229,7 +229,6 @@ def extract_all_features(class_name, class_dir):
             area, perimeter, compactness, eccentricity = shape_feature(os.path.join(class_dir, filename))
 
             # merge all to be in one list
-            features = ndwi + ndvi + color + var + hist + [texture_gradient, texture_energy, texture_correlation, texture_homogeneity, area, perimeter, compactness, eccentricity]
-            # segmented_image = segment_feature(os.path.join(class_dir, filename))
+            features = ndwi + ndvi + hist + [color[0], color[1], color[2], var[0], var[1], var[2], texture_gradient, texture_energy, texture_correlation, texture_homogeneity, area, perimeter, compactness, eccentricity]
             # append the features to the CSV file
             writer.writerow(features)
