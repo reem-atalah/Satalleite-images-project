@@ -21,23 +21,22 @@ def calculate_ndwi(image_path):
     # Convert the image to float64 data type
     img = img_as_ubyte(img)
 
+    # summation value of the image pixels
+    summation = np.sum(img)
+
     # Calculate the NDWI
     green = img[:, :, 1].astype('float64')
     blue = img[:, :, 2].astype('float64')
 
-    # np.seterr(divide='ignore', invalid='ignore')
     # if there is zero value for np.add(green, blue) then put 0 at this position
     if np.any(np.add(green, blue) == 0):
         ndwi = np.divide(np.subtract(green, blue), np.add(green, blue) + 0.0000001)
     else:
         ndwi = np.divide(np.subtract(green, blue), np.add(green, blue))
 
-    list_ndwi = []
-    for i in range(len(ndwi)):
-        for j in range(len(ndwi[i])):
-            list_ndwi.append(ndwi[i][j])
+    summation_ndwi = np.sum(ndwi)
 
-    return list_ndwi
+    return summation, summation_ndwi
 
 """Normalized Difference Vegetation Index"""
 
@@ -59,12 +58,9 @@ def calculate_ndvi(image_path):
     else:
         ndvi = np.divide(np.subtract(nir, red), np.add(nir, red))
 
-    list_ndvi = []
-    for i in range(len(ndvi)):
-        for j in range(len(ndvi[i])):
-            list_ndvi.append(ndvi[i][j])
+    summation_ndvi = np.sum(ndvi)
 
-    return list_ndvi
+    return summation_ndvi
 
 """Color features:
 * color averaging
@@ -95,13 +91,12 @@ def color_feature(image_path):
     hist, bins = np.histogramdd(img_arr_flooded.reshape(-1, 3), bins=256, range=((0, 255), (0, 255), (0, 255)))
     hist_norm = hist / np.sum(hist)
 
-    hist_list = []
-    for i in range(len(hist_norm)):
-        for j in range(len(hist_norm[i])):
-            for k in range(len(hist_norm[i][j])):
-                hist_list.append(hist_norm[i][j][k])
+    mean = np.mean(hist_norm)
+    std = np.std(hist_norm)
+    skewness = np.mean((hist_norm - mean) ** 3) / std ** 3
+    kurtosis = np.mean((hist_norm - mean) ** 4) / std ** 4
 
-    return avg_color, color_var, hist_list
+    return avg_color, color_var, mean, std, skewness, kurtosis
 
 """Extract texture features:
 * texture gradient
@@ -212,23 +207,17 @@ def segment_feature(image_path):
 def extract_all_features(class_name, class_dir):
     # check if the file already exists
     features_file = class_name + '_features.csv'
-    # file_exists = os.path.isfile(features_file)
-    # # if the file doesn't exist yet, create it with the header
-    # if not file_exists:
-    #     with open(features_file, 'w', newline='') as f:
-    #         writer = csv.writer(f)
-    #         writer.writerow(['ndwi', 'ndvi', 'color', 'var', 'hist', 'texture_gradient', 'texture_energy', 'texture_correlation', 'texture_homogeneity', 'area', 'perimeter', 'compactness', 'eccentricity'])
     # process each image in the directory and append the features to the CSV file
     with open(features_file, 'a', newline='') as f:
         writer = csv.writer(f)
         for filename in os.listdir(class_dir):
-            ndwi = calculate_ndwi(os.path.join(class_dir, filename))
+            img, ndwi = calculate_ndwi(os.path.join(class_dir, filename))
             ndvi = calculate_ndvi(os.path.join(class_dir, filename))
-            color, var, hist = color_feature(os.path.join(class_dir, filename))
+            color, var, mean, std, skewness, kurtosis = color_feature(os.path.join(class_dir, filename))
             texture_gradient, texture_energy, texture_correlation, texture_homogeneity = texture_feature(os.path.join(class_dir,filename))
             area, perimeter, compactness, eccentricity = shape_feature(os.path.join(class_dir, filename))
 
             # merge all to be in one list
-            features = ndwi + ndvi + hist + [color[0], color[1], color[2], var[0], var[1], var[2], texture_gradient, texture_energy, texture_correlation, texture_homogeneity, area, perimeter, compactness, eccentricity]
+            features = [img, ndwi, ndvi, color[0], color[1], color[2], var[0], var[1], var[2], mean, std, skewness, kurtosis, texture_gradient, texture_energy, texture_correlation, texture_homogeneity, area, perimeter, compactness, eccentricity]
             # append the features to the CSV file
             writer.writerow(features)
