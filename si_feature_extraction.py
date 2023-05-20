@@ -207,6 +207,13 @@ def segment_feature(image_path):
 def extract_all_features(class_name, class_dir):
     # check if the file already exists
     features_file = class_name + '_features.csv'
+    file_exists = os.path.isfile(features_file)
+    # if the file doesn't exist yet, create it with the header
+    if not file_exists:
+        with open(features_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            # img	ndwi	ndvi	color1	color2	color3	var1	var2	var3	mean	std	skweness	kurtosis	gradient	energy	correlation	homo	area	perimeter	compactness	eccentricity
+            writer.writerow(['img','ndwi','ndvi','color1','color2','color3','var1','var2','var3','mean','std','skweness','kurtosis','gradient','energy','correlation','homo','area','perimeter','compactness','eccentricity'])
     # process each image in the directory and append the features to the CSV file
     with open(features_file, 'a', newline='') as f:
         writer = csv.writer(f)
@@ -221,3 +228,4 @@ def extract_all_features(class_name, class_dir):
             features = [img, ndwi, ndvi, color[0], color[1], color[2], var[0], var[1], var[2], mean, std, skewness, kurtosis, texture_gradient, texture_energy, texture_correlation, texture_homogeneity, area, perimeter, compactness, eccentricity]
             # append the features to the CSV file
             writer.writerow(features)
+            
